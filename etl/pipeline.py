@@ -143,7 +143,7 @@ class ETL: # classe para realizar a extração, transformação  de CSV -> JSON
         return transformed_data
 
     def load(self, data):   #funcao para carregar os dados transformados em um arquivo JSON
-            logging.info(f"📂 Salvando dados em {self.output_path}")  # imprime onde estao salvando os dados
+            logger.info(f"💾 Salvando dados em {self.output_path}")  # imprime onde estao salvando os dados
             
             try:
                 os.makedirs(os.path.dirname(self.output_path), exist_ok=True) #cria o diretório onde o arquivo vai ser salvo
@@ -151,16 +151,22 @@ class ETL: # classe para realizar a extração, transformação  de CSV -> JSON
                 with open(self.output_path, mode='w', encoding='utf-8') as file: #abre o arquivo
                     json.dump(data, file, indent=4, ensure_ascii=False) #salva o arquivo
                 logging.info(f"✅ Dados salvos em {self.output_path}")
+
             except Exception as e:
                 logging.error(f"❌ Erro ao salvar dados: {e}")
                 raise
         
 
     def run(self):  #funcao para executar o ETL
+        try:
             data = self.extract()  #extrai os dados
             validate_data (data)    #valida os dados
             data = self.trasform(data)   #limapa os dados
             self.load(data) #carrega os dados em um arquivo JSON
+
+        except Exception as e:
+            logging.error(f"❌ Erro ao executar o ETL: {e}")
+            raise
 
 
 if __name__ == "__main__":  #verifica se o arquivo foi executado diretamente como um script principal   
