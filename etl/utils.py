@@ -29,24 +29,76 @@ def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os d
     logger.info(f"Dados validados: {len(data)} registros encontrados")
     return True
 
-def validate_schema(record: dict, schema: dict) -> bool: #funcao para validar o schema record (dict): Linha do CSV já convertida para dicionário.schema (dict): Dicionário com os campos esperados e seus tipos. retorna true  or false
+def validate_schema(record: Dict[str, Any], schema: Dict[str, type]) -> bool: #funcao para validar o schema de um dicionario
 
-    for key, expected_type in schema.items():
+    for key, expected_type in schema.items(): # percorre o dicionario schema
         if key not in record:
-            print(f"[ERRO] Campo {key} não encontrado no registro.")
+            logger.error(f"Campo '{key}' não encontrado no registro")
             return False
+        
         try:
             # Tentativa de conversão para o tipo esperado
+            value = record[key]
+            
             if expected_type == int:
-                int(record[key])
+                int(value)
             elif expected_type == float:
-                float(record[key])
+                float(value)
             elif expected_type == str:
-                str(record[key])
+                str(value)
             else:
                 # Caso vá suportar outros tipos depois
-                pass
-        except (ValueError, TypeError):
-            print(f"[ERRO] Campo {key} com valor inválido: {record[key]}")
+                logger.debug(f"Tipo {expected_type} não tem validação específica implementada")
+                
+        except (ValueError, TypeError) as e:
+            logger.error(f"Campo '{key}' com valor inválido: '{record[key]}' - Erro: {str(e)}")
             return False
+    
+    logger.debug(f"Registro validado com sucesso: {list(record.keys())}")
+    return True
+def validate_batch_records(data: List[Dict[str, Any]], schema: Dict[str, type]) -> Dict[str, Any]: #funcao para validar um lote de registros 
+    # Inicializa variáveis
+    total_records = len(data)
+    valid_count = 0
+    invalid_indices = []
+    
+    logger.info(f"Iniciando validação em lote de {total_records} registros")
+    
+    for index, record in enumerate(data):
+        if validate_schema(record, schema):
+            valid_count += 1
+        else:
+            invalid_indices.append(index + 1)  # +1 para linha real (considerando header)
+    
+    invalid_count = len(invalid_indices)
+    success_rate = (valid_count / total_records * 100) if total_records > 0 else 0
+    
+    # Log do resultado
+    if invalid_count == 0:
+        logger.info(f"✅ Validação concluída: Todos os {total_records} registros são válidos")
+    else:
+        logger.warning(f"⚠️ Validação concluída: {valid_count}/{total_records} registros válidos ({success_rate:.1f}%)")
+        logger.warning(f"Registros inválidos nas linhas: {invalid_indices}")
+    
+    return {
+        'total_records': total_records,
+        'valid_records': valid_count,
+        'invalid_records': invalid_count,
+        'invalid_lines': invalid_indices,
+        'success_rate': success_rate,
+        'is_valid': invalid_count == 0
+    }
+def validate_required_fields(record: Dict[str, Any], required_fields: List[str]) -> bool: #funcao para validar os campos obrigatorios de um dicionario  
+    logger.debug(f"Validando campos obrigatórios: {required_fields}")
+    missing_fields = []
+    
+    for field in required_fields:
+        if field not in record or record[field] is None or str(record[field]).strip() == '':
+            missing_fields.append(field)
+    
+    if missing_fields:
+        logger.error(f"Campos obrigatórios ausentes ou vazios: {missing_fields}")
+        return False
+    
+    logger.debug(f"Todos os campos obrigatórios estão presentes: {required_fields}")
     return True
