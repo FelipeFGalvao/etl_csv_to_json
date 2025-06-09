@@ -1,0 +1,10 @@
+# Pytest cache
+.pytest_cache/
+
+# Bytecode do Python
+__pycache__/
+*.py[cod]
+
+# Ambiente virtual (se existir)
+.env/
+.venv/
