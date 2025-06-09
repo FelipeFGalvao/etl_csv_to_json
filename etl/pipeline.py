@@ -168,6 +168,34 @@ class ETL: # classe para realizar a extração, transformação  de CSV -> JSON
             logging.error(f"❌ Erro ao executar o ETL: {e}")
             raise
 
+        logging.info("🎉 ETL concluido com sucesso!")
+    def get_validation_summary(self, data): #funcao para obter um resumo da validação
+        logger.info("🔍 Obtendo resumo de validação...")
+        if not data:
+            return {"error": "Dados vazios"}
+            
+        # Limpa os dados primeiro
+        cleaned_data = []
+        for row in data:
+            cleaned_row = {k.strip(): v.strip() if isinstance(v, str) else v for k, v in row.items()}
+            cleaned_data.append(cleaned_row)
+        
+        # Validação em lote
+        batch_report = validate_batch_records(cleaned_data, self.schema)
+        
+        # Validação de campos obrigatórios
+        missing_required_count = 0
+        for row in cleaned_data:
+            if not validate_required_fields(row, self.required_fields):
+                missing_required_count += 1
+        
+        return {
+            **batch_report,
+            'missing_required_fields_count': missing_required_count,
+            'required_fields': self.required_fields,
+            'schema_fields': list(self.schema.keys())
+        }
+
 
 if __name__ == "__main__":  #verifica se o arquivo foi executado diretamente como um script principal   
     input_file_name = 'CRM_profiles.csv'
