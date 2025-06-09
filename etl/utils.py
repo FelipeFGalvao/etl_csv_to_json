@@ -1,20 +1,34 @@
 import os
 import logging
+from typing import Dict, Any, List
 
-def validate_csv_exists(file_path):
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+def validate_csv_exists(file_path) -> None:
     """
     Valida se o arquivo CSV existe no caminho informado.
     """
     if not os.path.isfile(file_path):
-        logging.error(f"Arquivo CSV não encontrado: {file_path}")
+        logger.error(f"Arquivo CSV não encontrado: {file_path}")
         raise FileNotFoundError(f"Arquivo CSV não encontrado: {file_path}")
+    
+    logger.info(f"Arquivo CSV validado com sucesso: {file_path}")
 
-def validate_data(data):
-    """
-    Validação simples: verifica se os dados não estão vazios.
-    """
+
+def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os dados
     if not data:
-        logging.warning("O arquivo CSV está vazio!")
+        logger.warning("O arquivo CSV está vazio!")
+        return False
+    
+    logger.info(f"Dados validados: {len(data)} registros encontrados")
+    return True
+
 def validate_schema(record: dict, schema: dict) -> bool: #funcao para validar o schema record (dict): Linha do CSV já convertida para dicionário.schema (dict): Dicionário com os campos esperados e seus tipos. retorna true  or false
 
     for key, expected_type in schema.items():
