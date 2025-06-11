@@ -57,31 +57,58 @@ def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os d
 
 def validate_schema(record: Dict[str, Any], schema: Dict[str, type]) -> bool: #funcao para validar o schema de um dicionario
 
-    for key, expected_type in schema.items(): # percorre o dicionario schema
+    if not isinstance(record, dict):
+        logger.error(f"Registro deve ser um dicionário, recebido: {type(record)}")
+        return False
+    
+    if not isinstance(schema, dict):
+        logger.error(f"Schema deve ser um dicionário, recebido: {type(schema)}")
+        return False
+    
+    errors = []
+    
+    for key, expected_type in schema.items():
         if key not in record:
-            logger.error(f"Campo '{key}' não encontrado no registro")
-            return False
+            errors.append(f"Campo '{key}' não encontrado")
+            continue
         
         try:
-            # Tentativa de conversão para o tipo esperado
             value = record[key]
             
+            # Permitir valores None/vazios para campos opcionais
+            if value is None or (isinstance(value, str) and value.strip() == ''):
+                logger.debug(f"Campo '{key}' está vazio/None")
+                continue
+            
+            # Validação por tipo
             if expected_type == int:
-                int(value)
+                # Tenta converter para int
+                converted_value = int(float(str(value)))  # Suporta "30.0" -> 30
+                if str(converted_value) != str(value).split('.')[0]:
+                    logger.debug(f"Valor convertido para int: '{value}' -> {converted_value}")
+                    
             elif expected_type == float:
                 float(value)
+                
             elif expected_type == str:
                 str(value)
-            else:
-                # Caso vá suportar outros tipos depois
-                logger.debug(f"Tipo {expected_type} não tem validação específica implementada")
                 
-        except (ValueError, TypeError) as e:
-            logger.error(f"Campo '{key}' com valor inválido: '{record[key]}' - Erro: {str(e)}")
-            return False
+            else:
+                # Tipos não implementados especificamente
+                logger.debug(f"Tipo {expected_type.__name__} validado genericamente para campo '{key}'")
+                
+        except (ValueError, TypeError, AttributeError) as e:
+            error_detail = f"Campo '{key}' com valor inválido: '{value}' (esperado: {expected_type.__name__})"
+            errors.append(error_detail)
+            logger.debug(f"Erro de validação: {error_detail} - {str(e)}")
     
-    logger.debug(f"Registro validado com sucesso: {list(record.keys())}")
+    if errors:
+        logger.error(f"Registro inválido - {len(errors)} erro(s): {'; '.join(errors)}")
+        return False
+    
+    logger.debug(f"✅ Registro validado com sucesso: {len(record)} campos")
     return True
+
 def validate_batch_records(data: List[Dict[str, Any]], schema: Dict[str, type]) -> Dict[str, Any]: #funcao para validar um lote de registros 
     # Inicializa variáveis
     total_records = len(data)
