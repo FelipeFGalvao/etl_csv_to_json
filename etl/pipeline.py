@@ -158,17 +158,18 @@ class ETL: # classe para realizar a extração, transformação  de CSV -> JSON
         
 
     def run(self):  #funcao para executar o ETL
+        logger.info("🚀 Iniciando pipeline ETL...")
         try:
             data = self.extract()  #extrai os dados
-            validate_data (data)    #valida os dados
-            data = self.trasform(data)   #limapa os dados
+            #validate_data (data)    #valida os dados   comnetada pois já tem essa chamada na funcao transform
+            data = self.transform(data)   #limapa os dados
             self.load(data) #carrega os dados em um arquivo JSON
 
         except Exception as e:
-            logging.error(f"❌ Erro ao executar o ETL: {e}")
+            logger.error(f"❌ Erro ao executar o ETL: {e}")
             raise
 
-        logging.info("🎉 ETL concluido com sucesso!")
+        logger.info("🎉 ETL concluido com sucesso!")
     def get_validation_summary(self, data): #funcao para obter um resumo da validação
         logger.info("🔍 Obtendo resumo de validação...")
         if not data:
