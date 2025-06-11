@@ -110,28 +110,81 @@ def validate_schema(record: Dict[str, Any], schema: Dict[str, type]) -> bool: #f
     return True
 
 def validate_batch_records(data: List[Dict[str, Any]], schema: Dict[str, type]) -> Dict[str, Any]: #funcao para validar um lote de registros 
-    # Inicializa variáveis
+     # Validações iniciais
+    if not isinstance(data, list):
+        logger.error("Dados devem ser uma lista")
+        return {
+            'total_records': 0,
+            'valid_records': 0,
+            'invalid_records': 0,
+            'invalid_lines': [],
+            'success_rate': 0.0,
+            'is_valid': False,
+            'validation_errors': ['Dados não são uma lista válida']
+        }
+    
     total_records = len(data)
+    if total_records == 0:
+        logger.warning("Lista de dados está vazia")
+        return {
+            'total_records': 0,
+            'valid_records': 0,
+            'invalid_records': 0,
+            'invalid_lines': [],
+            'success_rate': 0.0,
+            'is_valid': True,  # Tecnicamente não há erros
+            'validation_errors': []
+        }
+    
+    # Inicialização das variáveis de controle
     valid_count = 0
     invalid_indices = []
+    validation_errors = []
     
-    logger.info(f"Iniciando validação em lote de {total_records} registros")
+    logger.info(f"🔍 Iniciando validação em lote de {total_records} registros")
     
+    # Processamento dos registros
     for index, record in enumerate(data):
-        if validate_schema(record, schema):
-            valid_count += 1
-        else:
-            invalid_indices.append(index + 1)  # +1 para linha real (considerando header)
+        line_number = index + 1  # +1 para linha real (considerando possível header)
+        
+        try:
+            if validate_schema(record, schema):
+                valid_count += 1
+                logger.debug(f"Registro linha {line_number}: VÁLIDO")
+            else:
+                invalid_indices.append(line_number)
+                error_msg = f"Linha {line_number}: Schema inválido"
+                if len(validation_errors) < 10:  # Limita erros para não sobrecarregar log
+                    validation_errors.append(error_msg)
+                logger.debug(f"Registro linha {line_number}: INVÁLIDO")
+                
+        except Exception as e:
+            invalid_indices.append(line_number)
+            error_msg = f"Linha {line_number}: Erro inesperado - {str(e)}"
+            if len(validation_errors) < 10:
+                validation_errors.append(error_msg)
+            logger.error(f"Erro inesperado na linha {line_number}: {str(e)}")
     
+    # Cálculos finais
     invalid_count = len(invalid_indices)
-    success_rate = (valid_count / total_records * 100) if total_records > 0 else 0
+    success_rate = round((valid_count / total_records * 100), 2) if total_records > 0 else 0.0
+    is_completely_valid = invalid_count == 0
     
-    # Log do resultado
-    if invalid_count == 0:
-        logger.info(f"✅ Validação concluída: Todos os {total_records} registros são válidos")
+    # Logging dos resultados
+    if is_completely_valid:
+        logger.info(f"✅ Validação concluída: Todos os {total_records} registros são válidos (100%)")
     else:
-        logger.warning(f"⚠️ Validação concluída: {valid_count}/{total_records} registros válidos ({success_rate:.1f}%)")
-        logger.warning(f"Registros inválidos nas linhas: {invalid_indices}")
+        logger.warning(f"⚠️ Validação concluída: {valid_count}/{total_records} registros válidos ({success_rate}%)")
+        
+        # Log das linhas inválidas (limitado para não poluir)
+        if len(invalid_indices) <= 20:
+            logger.warning(f"Registros inválidos nas linhas: {invalid_indices}")
+        else:
+            logger.warning(f"Registros inválidos: {invalid_count} linhas (primeiras 20: {invalid_indices[:20]}...)")
+    
+    # Se há muitos erros, adiciona resumo
+    if len(validation_errors) == 10 and invalid_count > 10:
+        validation_errors.append(f"... e mais {invalid_count - 10} erros similares")
     
     return {
         'total_records': total_records,
@@ -139,8 +192,10 @@ def validate_batch_records(data: List[Dict[str, Any]], schema: Dict[str, type]) 
         'invalid_records': invalid_count,
         'invalid_lines': invalid_indices,
         'success_rate': success_rate,
-        'is_valid': invalid_count == 0
+        'is_valid': is_completely_valid,
+        'validation_errors': validation_errors
     }
+
 def validate_required_fields(record: Dict[str, Any], required_fields: List[str]) -> bool: #funcao para validar os campos obrigatorios de um dicionario  
     logger.debug(f"Validando campos obrigatórios: {required_fields}")
     missing_fields = []
