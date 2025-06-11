@@ -38,12 +38,21 @@ def validate_csv_exists(file_path: Union[str, Path]) -> None:
         raise TypeError(error_msg) from e
 
 
-def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os dados
+def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os dados devolvendo de forma booleana
+    if not isinstance(data, list):
+            logger.error(f"Dados devem ser uma lista, recebido: {type(data)}")
+            return False
+        
     if not data:
-        logger.warning("O arquivo CSV está vazio!")
+        logger.warning("⚠️ O arquivo CSV está vazio ou não contém dados válidos!")
         return False
-    
-    logger.info(f"Dados validados: {len(data)} registros encontrados")
+        
+        # Verificação adicional: se todos os elementos são dicionários
+    non_dict_count = sum(1 for item in data if not isinstance(item, dict))
+    if non_dict_count > 0:
+            logger.warning(f"⚠️ {non_dict_count} registros não são dicionários válidos")
+        
+    logger.info(f"✅ Dados validados: {len(data)} registros encontrados")
     return True
 
 def validate_schema(record: Dict[str, Any], schema: Dict[str, type]) -> bool: #funcao para validar o schema de um dicionario
