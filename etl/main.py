@@ -10,3 +10,5 @@ if __name__ == "__main__":  #verifica se o arquivo foi executado diretamente com
 
     etl = ETL(input_file, output_file)  #cria uma instancia da classe
     etl.run()   #executa o ETL
+
+    

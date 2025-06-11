@@ -1,6 +1,8 @@
 import os
 import logging
 from typing import Dict, Any, List
+from pathlib import Path
+
 
 
 logging.basicConfig(
@@ -10,15 +12,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def validate_csv_exists(file_path) -> None:
-    """
-    Valida se o arquivo CSV existe no caminho informado.
-    """
-    if not os.path.isfile(file_path):
-        logger.error(f"Arquivo CSV não encontrado: {file_path}")
-        raise FileNotFoundError(f"Arquivo CSV não encontrado: {file_path}")
-    
-    logger.info(f"Arquivo CSV validado com sucesso: {file_path}")
+def validate_csv_exists(file_path: Union[str, Path]) -> None:
+    try:
+        file_path_obj = Path(file_path)
+        
+        if not file_path_obj.exists():
+            error_msg = f"Arquivo CSV não encontrado: {file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        
+        if not file_path_obj.is_file():
+            error_msg = f"Caminho não aponta para um arquivo: {file_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+            
+        # Verificação adicional da extensão
+        if file_path_obj.suffix.lower() not in ['.csv', '.txt']:
+            logger.warning(f"Arquivo não tem extensão CSV: {file_path}")
+        
+        logger.info(f"✅ Arquivo CSV validado com sucesso: {file_path}")
+        
+    except (TypeError, ValueError) as e:
+        error_msg = f"Caminho inválido fornecido: {file_path} - {str(e)}"
+        logger.error(error_msg)
+        raise TypeError(error_msg) from e
 
 
 def validate_data(data: List[Dict[str, Any]]) -> bool: #funcao para validar os dados
