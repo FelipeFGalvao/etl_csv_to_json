@@ -196,17 +196,67 @@ def validate_batch_records(data: List[Dict[str, Any]], schema: Dict[str, type]) 
         'validation_errors': validation_errors
     }
 
-def validate_required_fields(record: Dict[str, Any], required_fields: List[str]) -> bool: #funcao para validar os campos obrigatorios de um dicionario  
-    logger.debug(f"Validando campos obrigatórios: {required_fields}")
-    missing_fields = []
+def validate_required_fields(record: Dict[str, Any], required_fields: List[str]) -> bool:
+    """
+    Valida se todos os campos obrigatórios estão presentes e não vazios.
     
-    for field in required_fields:
-        if field not in record or record[field] is None or str(record[field]).strip() == '':
-            missing_fields.append(field)
-    
-    if missing_fields:
-        logger.error(f"Campos obrigatórios ausentes ou vazios: {missing_fields}")
+    Args:
+        record: Dicionário representando um registro
+        required_fields: Lista com nomes dos campos obrigatórios
+        
+    Returns:
+        bool: True se todos os campos obrigatórios são válidos, False caso contrário
+        
+    Example:
+        >>> required = ["name", "email"]
+        >>> record = {"name": "João", "email": "joao@email.com", "age": 30}
+        >>> validate_required_fields(record, required)
+        True
+    """
+    if not isinstance(record, dict):
+        logger.error(f"Registro deve ser um dicionário, recebido: {type(record)}")
         return False
     
-    logger.debug(f"Todos os campos obrigatórios estão presentes: {required_fields}")
+    if not isinstance(required_fields, list):
+        logger.error(f"Campos obrigatórios devem ser uma lista, recebido: {type(required_fields)}")
+        return False
+    
+    if not required_fields:
+        logger.debug("Nenhum campo obrigatório definido")
+        return True
+    
+    logger.debug(f"🔍 Validando {len(required_fields)} campos obrigatórios: {required_fields}")
+    
+    missing_fields = []
+    empty_fields = []
+    
+    for field in required_fields:
+        if field not in record:
+            missing_fields.append(field)
+        elif record[field] is None:
+            empty_fields.append(f"{field} (None)")
+        elif isinstance(record[field], str) and record[field].strip() == '':
+            empty_fields.append(f"{field} (vazio)")
+        else:
+            # Campo presente e não vazio
+            logger.debug(f"✅ Campo obrigatório '{field}': OK")
+    
+    # Relatório de erros
+    all_issues = []
+    if missing_fields:
+        issue = f"Campos ausentes: {missing_fields}"
+        all_issues.append(issue)
+        logger.error(f"❌ {issue}")
+    
+    if empty_fields:
+        issue = f"Campos vazios: {empty_fields}"
+        all_issues.append(issue)
+        logger.error(f"❌ {issue}")
+    
+    if all_issues:
+        logger.error(f"Validação de campos obrigatórios falhou: {'; '.join(all_issues)}")
+        return False
+    
+    logger.debug(f"✅ Todos os {len(required_fields)} campos obrigatórios estão válidos")
     return True
+
