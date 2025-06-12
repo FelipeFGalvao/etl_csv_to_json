@@ -260,3 +260,21 @@ def validate_required_fields(record: Dict[str, Any], required_fields: List[str])
     logger.debug(f"✅ Todos os {len(required_fields)} campos obrigatórios estão válidos")
     return True
 
+def log_validation_report(report: Dict[str, Any], detailed: bool = False) -> None:
+
+    logger.info("=" * 50)
+    logger.info("📊 RELATÓRIO DE VALIDAÇÃO")
+    logger.info("=" * 50)
+    logger.info(f"Total de registros: {report['total_records']}")
+    logger.info(f"Registros válidos: {report['valid_records']}")
+    logger.info(f"Registros inválidos: {report['invalid_records']}")
+    logger.info(f"Taxa de sucesso: {report['success_rate']}%")
+    logger.info(f"Status geral: {'✅ APROVADO' if report['is_valid'] else '❌ REPROVADO'}")
+    
+    if detailed and report['validation_errors']:
+        logger.info("\n🔍 DETALHES DOS ERROS:")
+        for error in report['validation_errors']:
+            logger.info(f"  • {error}")
+    
+    logger.info("=" * 50)
+
