@@ -59,7 +59,7 @@ def required_fields():
 def mixed_valid_invalid_data():
     """Dados mistos com registros válidos e inválidos para testes de lote"""
     return [
-        # Registro válido
+        # Registro válido 
         {
             "TITLE": "Mr", "F_NAME": "Carlos", "L_NAME": "Santos", "GENDER": "male",
             "MONTH_AND_DATE": "05-15", "DOB": "1985-05-15", "YOB": "1985", 
@@ -68,7 +68,7 @@ def mixed_valid_invalid_data():
             "STREET": "Rua B", "CITY": "Rio de Janeiro", "STATE": "RJ", 
             "COUNTRY": "Brazil", "ZIP": "11111-111", "LAT": "-22.9068", "LONG": "-43.1729"
         },
-        # Registro inválido (YOB como string não numérica)
+        # Registro inválido (YOB como string não numérica) 
         {
             "TITLE": "Mrs", "F_NAME": "Maria", "L_NAME": "Costa", "GENDER": "female",
             "MONTH_AND_DATE": "08-20", "DOB": "1992-08-20", "YOB": "not_a_year", 
@@ -77,7 +77,7 @@ def mixed_valid_invalid_data():
             "STREET": "Rua C", "CITY": "Belo Horizonte", "STATE": "MG", 
             "COUNTRY": "Brazil", "ZIP": "22222-222", "LAT": "invalid_lat", "LONG": "-43.9378"
         },
-        # Registro válido
+        # Registro válido (ano de nascimento com 4 dígitos) 
         {
             "TITLE": "Dr", "F_NAME": "Ana", "L_NAME": "Oliveira", "GENDER": "female",
             "MONTH_AND_DATE": "12-10", "DOB": "1988-12-10", "YOB": "1988", 
@@ -87,3 +87,42 @@ def mixed_valid_invalid_data():
             "COUNTRY": "Brazil", "ZIP": "33333-333", "LAT": "-12.9714", "LONG": "-38.5014"
         }
     ]
+
+#-------------------------------------------------------testes ETL pipeline
+class TestETLExtract:
+    """Testes para a função extract() do pipeline ETL"""
+    
+    def test_extract_success(self, sample_data):
+        """Testa a extração bem-sucedida de um arquivo CSV"""
+        csv_content = "\n".join([
+            ",".join(sample_data[0].keys()),
+            ",".join(str(v) for v in sample_data[0].values())
+        ])
+        
+        with patch("builtins.open", mock_open(read_data=csv_content)):
+            etl = ETL("dummy.csv", "dummy.json")
+            result = etl.extract()
+            assert len(result) == 1
+            assert result[0]["F_NAME"] == "João"
+    
+    def test_extract_file_not_found(self):
+        """Testa o tratamento de erro pra caso o arquivo noa exista"""
+        etl = ETL('data/input/arquivo_que_nao_existe.csv', 'fake.json')
+        with pytest.raises(FileNotFoundError):
+            etl.extract()
+    
+    def test_extract_empty_csv(self):
+        """Testa a extração de um arquivo CSV vazio"""
+        with patch("builtins.open", mock_open(read_data="")):
+            etl = ETL("empty.csv", "dummy.json")
+            result = etl.extract()
+            assert result == []
+    
+    def test_extract_csv_with_only_headers(self):
+        """Testa a extração de CSV com apenas cabeçalhos"""
+        csv_content = "F_NAME,L_NAME,EMAIL"
+        
+        with patch("builtins.open", mock_open(read_data=csv_content)):
+            etl = ETL("headers_only.csv", "dummy.json")
+            result = etl.extract()
+            assert result == []
