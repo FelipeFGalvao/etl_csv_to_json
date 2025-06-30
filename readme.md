@@ -30,16 +30,16 @@ O objetivo deste ETL é garantir a integridade e a qualidade dos dados de perfis
 
 ## ✨ Funcionalidades
 
--   **Extração (Extract):** Leitura eficiente de dados de arquivos `.csv` utilizando `DictReader` para processar registros como dicionários.
+-   **Extração (Extract):** Leitura eficiente de dados de arquivos `.csv` utilizando `DictReader` para processar registros como dicionários. Valida a existência e o formato do arquivo de entrada.
 -   **Transformação (Transform):**
     -   **Limpeza de Dados:** Remove automaticamente espaços em branco desnecessários das chaves e valores de cada registro.
     -   **Validação em Lote:** Realiza uma validação prévia em todos os dados para gerar um relatório rápido sobre a saúde geral do arquivo, com a taxa de sucesso inicial.
-    -   **Validação Individual Rigorosa:** Cada registro é verificado para garantir a presença de campos obrigatórios e a conformidade com o schema de tipos de dados.
+    -   **Validação Individual com Lógica Avançada:** Cada registro é verificado para garantir a presença de campos obrigatórios (diferenciando campos ausentes de campos vazios) e a conformidade com o schema, incluindo conversões de tipo inteligentes.
     -   **Tolerância a Falhas:** Registros inválidos são descartados e logados como `warning` sem interromper o pipeline, garantindo que todos os dados válidos sejam processados.
 -   **Carga (Load):**
     -   Criação automática do diretório de saída, se não existir.
     -   Salvamento dos dados limpos e válidos em formato `.json` legível e bem formatado.
--   **Logging Detalhado:** Registra cada etapa (`INFO`), avisos de registros inválidos (`WARNING`) e erros críticos (`ERROR`), com timestamps para fácil depuração.
+-   **Logging Detalhado e Estruturado:** Registra cada etapa (`INFO`), avisos de registros inválidos (`WARNING`) e erros críticos (`ERROR`), com timestamps para fácil depuração. Ao final, exibe um relatório de validação consolidado.
 
 ---
 
@@ -47,15 +47,15 @@ O objetivo deste ETL é garantir a integridade e a qualidade dos dados de perfis
 
 A etapa de transformação é o coração deste projeto e segue um fluxo robusto para garantir a máxima qualidade dos dados:
 
-1.  **Limpeza Inicial:** Antes de qualquer validação, todos os registros passam por uma limpeza, onde espaços em branco no início e no fim das chaves e valores são removidos.
+1.  **Limpeza Inicial:** Antes de qualquer validação, todos os registros passam por uma limpeza, onde espaços em branco no início e no fim das chaves e valores de texto são removidos.
 
 2.  **Validação em Lote (Prévia):** O sistema realiza uma primeira análise em todos os registros para gerar um relatório de saúde dos dados. Isso oferece uma visão macro da qualidade do arquivo de entrada, com a porcentagem de registros conformes.
 
 3.  **Validação Individual:** Cada registro é então validado individualmente contra dois critérios principais:
-    -   **Presença de Campos Obrigatórios:** Verifica se os seguintes campos existem e não estão vazios: `F_NAME`, `L_NAME`, `EMAIL`, `PHONE`.
-    -   **Conformidade com o Schema:** Garante que cada campo corresponde ao tipo de dado esperado. Por exemplo, `YOB` deve ser um inteiro (`int`) e `LAT` um número de ponto flutuante (`float`).
+    -   **Presença de Campos Obrigatórios:** Verifica se os seguintes campos existem: `F_NAME`, `L_NAME`, `EMAIL`, `PHONE`. O sistema diferencia campos que **não existem** no registro de campos que existem mas estão **vazios** (`None` ou `''`), gerando logs específicos para cada caso.
+    -   **Conformidade com o Schema:** Garante que cada campo corresponde ao tipo de dado esperado. A validação de tipo é robusta, capaz de, por exemplo, converter um valor como `"50.0"` para o inteiro `50`, e permite que campos não obrigatórios sejam nulos ou vazios.
 
-4.  **Tratamento de Registros:** Registros que falham em qualquer uma das validações individuais são descartados, e uma entrada de log (`WARNING`) é gerada, especificando o motivo da falha. O processo continua, assegurando que apenas os dados 100% válidos cheguem ao arquivo final.
+4.  **Tratamento e Relatório Final:** Registros que falham em qualquer uma das validações individuais são descartados, e uma entrada de log (`WARNING`) é gerada. Ao final do processo, um relatório consolidado e formatado é exibido no console, apresentando um resumo claro do resultado da operação.
 
 <details>
 <summary>📖 Clique para ver o Schema de Validação Completo</summary>
@@ -80,9 +80,7 @@ Este projeto foi construído com as seguintes tecnologias:
 -   **Python 3.11+**
 -   **Pytest** (para testes unitários)
 -   **pytest-cov** (para relatório de cobertura de testes)
--   Módulo `typing` para tipagem estática
--   Módulo `logging` para logs estruturados
--   Módulo `csv` e `json` para manipulação de arquivos
+-   Módulos Nativos: `typing`, `logging`, `csv`, `json`, `pathlib`
 
 ---
 
