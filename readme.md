@@ -2,16 +2,17 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=for-the-badge&logo=python)
 ![Tests](https://img.shields.io/badge/Tests-Pytest-green?style=for-the-badge&logo=pytest)
-![Coverage](https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge)
+![Coverage](https://img.shields.io/badge/Coverage-95%25-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
 
-> Pipeline de ETL (Extract, Transform, Load) construído em Python. Este projeto processa arquivos CSV de perfis de clientes, aplica validações rigorosas de schema e transforma os dados, salvando o resultado em formato JSON. Idealizado como uma peça de portfólio para demonstrar boas práticas de desenvolvimento, incluindo testes automatizados e código modular.
+> Pipeline de ETL (Extract, Transform, Load) construído em Python. Este projeto processa arquivos CSV de perfis de clientes, aplica validações rigorosas de schema e transforma os dados, salvando o resultado em formato JSON. Idealizado como uma peça de portfólio para demonstrar boas práticas de desenvolvimento, incluindo testes automatizados, logging detalhado e código modular.
 
 <br>
 
 ##  navegar
 * [📌 Sobre o Projeto](#-sobre-o-projeto)
 * [✨ Funcionalidades](#-funcionalidades)
+* [⚙️ O Processo de Transformação em Detalhes](#️-o-processo-de-transformação-em-detalhes)
 * [💻 Tecnologias Utilizadas](#-tecnologias-utilizadas)
 * [🚀 Como Executar o Projeto](#-como-executar-o-projeto)
 * [🧪 Como Rodar os Testes](#-como-rodar-os-testes)
@@ -23,18 +24,52 @@
 
 ## 📌 Sobre o Projeto
 
-O objetivo deste ETL é garantir a integridade e a qualidade dos dados que entram em um sistema. O pipeline extrai dados de um arquivo `CRM_profiles.csv`, valida se cada registro atende a um schema pré-definido (campos obrigatórios, tipos de dados), realiza transformações como limpeza de espaços e padronização, e carrega os dados validados em um arquivo `CRM_profiles.json`. Erros de validação são registrados em logs para fácil rastreabilidade.
+O objetivo deste ETL é garantir a integridade e a qualidade dos dados de perfis de clientes antes de serem consumidos por outros sistemas. O pipeline extrai dados de um arquivo `CRM_profiles.csv`, executa um processo de validação e limpeza em duas etapas, e carrega os dados 100% conformes em um arquivo `CRM_profiles.json`. Erros e avisos são registrados em logs para total rastreabilidade do processo.
 
 ---
 
 ## ✨ Funcionalidades
 
--   **Extração (Extract):** Leitura de dados a partir de arquivos `.csv`.
--   **Validação de Schema:** Garante que os dados de entrada possuam a estrutura correta (campos, tipos, etc.).
--   **Transformação (Transform):** Limpeza de dados, como remoção de espaços em branco e tratamento de valores nulos.
--   **Carga (Load):** Salvamento dos dados processados e válidos em formato `.json`.
--   **Logging Detalhado:** Registra cada etapa do processo, incluindo erros de validação e sucesso na execução.
--   **Testes Unitários:** Cobertura de testes robusta para as funções de extração, transformação e carga, garantindo a confiabilidade do pipeline.
+-   **Extração (Extract):** Leitura eficiente de dados de arquivos `.csv` utilizando `DictReader` para processar registros como dicionários.
+-   **Transformação (Transform):**
+    -   **Limpeza de Dados:** Remove automaticamente espaços em branco desnecessários das chaves e valores de cada registro.
+    -   **Validação em Lote:** Realiza uma validação prévia em todos os dados para gerar um relatório rápido sobre a saúde geral do arquivo, com a taxa de sucesso inicial.
+    -   **Validação Individual Rigorosa:** Cada registro é verificado para garantir a presença de campos obrigatórios e a conformidade com o schema de tipos de dados.
+    -   **Tolerância a Falhas:** Registros inválidos são descartados e logados como `warning` sem interromper o pipeline, garantindo que todos os dados válidos sejam processados.
+-   **Carga (Load):**
+    -   Criação automática do diretório de saída, se não existir.
+    -   Salvamento dos dados limpos e válidos em formato `.json` legível e bem formatado.
+-   **Logging Detalhado:** Registra cada etapa (`INFO`), avisos de registros inválidos (`WARNING`) e erros críticos (`ERROR`), com timestamps para fácil depuração.
+
+---
+
+## ⚙️ O Processo de Transformação em Detalhes
+
+A etapa de transformação é o coração deste projeto e segue um fluxo robusto para garantir a máxima qualidade dos dados:
+
+1.  **Limpeza Inicial:** Antes de qualquer validação, todos os registros passam por uma limpeza, onde espaços em branco no início e no fim das chaves e valores são removidos.
+
+2.  **Validação em Lote (Prévia):** O sistema realiza uma primeira análise em todos os registros para gerar um relatório de saúde dos dados. Isso oferece uma visão macro da qualidade do arquivo de entrada, com a porcentagem de registros conformes.
+
+3.  **Validação Individual:** Cada registro é então validado individualmente contra dois critérios principais:
+    -   **Presença de Campos Obrigatórios:** Verifica se os seguintes campos existem e não estão vazios: `F_NAME`, `L_NAME`, `EMAIL`, `PHONE`.
+    -   **Conformidade com o Schema:** Garante que cada campo corresponde ao tipo de dado esperado. Por exemplo, `YOB` deve ser um inteiro (`int`) e `LAT` um número de ponto flutuante (`float`).
+
+4.  **Tratamento de Registros:** Registros que falham em qualquer uma das validações individuais são descartados, e uma entrada de log (`WARNING`) é gerada, especificando o motivo da falha. O processo continua, assegurando que apenas os dados 100% válidos cheguem ao arquivo final.
+
+<details>
+<summary>📖 Clique para ver o Schema de Validação Completo</summary>
+
+```python
+{
+    "TITLE": str, "F_NAME": str, "L_NAME": str, "GENDER": str,
+    "MONTH_AND_DATE": str, "DOB": str, "YOB": int, "EMAIL": str,
+    "ID1": str, "ID2": str, "ID3": str, "ID4": str, "PHONE": str,
+    "EMAIL2": str, "STREET": str, "CITY": str, "STATE": str,
+    "COUNTRY": str, "ZIP": str, "LAT": float, "LONG": float,
+}
+```
+</details>
 
 ---
 
@@ -112,7 +147,6 @@ O projeto está organizado da seguinte forma para garantir clareza e manutenibil
 ```
 ETL_CSV_TO_JSON/
 │
-├── .pytest_cache/      # Cache gerado pelo Pytest
 ├── data/
 │   ├── input/
 │   │   └── CRM_profiles.csv  # Arquivo de dados brutos de entrada
@@ -123,10 +157,9 @@ ETL_CSV_TO_JSON/
 │   ├── __init__.py
 │   ├── main.py         # Ponto de entrada (entrypoint) para executar o pipeline
 │   ├── pipeline.py     # Contém a classe e a lógica do ETL
-│   └── utils.py        # Funções auxiliares (ex: validações)
+│   └── utils.py        # Funções auxiliares de validação
 │
 ├── tests/              # Suíte de testes automatizados
-│   ├── __init__.py
 │   └── test_etl.py     # Testes unitários para o pipeline
 │
 ├── .gitignore          # Arquivos e pastas a serem ignorados pelo Git
@@ -137,9 +170,9 @@ ETL_CSV_TO_JSON/
 
 ## 🧠 Próximos Passos
 
--   [ ] Integração com um banco de dados (ex: PostgreSQL, MongoDB) como destino (Load).
+-   [ ] Integração com um banco de dados (ex: PostgreSQL, SQLite) como destino (Load).
 -   [ ] Upload automático do arquivo JSON gerado para um serviço de nuvem (ex: AWS S3).
--   [ ] Criação de uma Interface de Linha de Comando (CLI) para passar argumentos (ex: caminho do arquivo de entrada/saída).
+-   [ ] Criação de uma Interface de Linha de Comando (CLI) com `argparse` para passar argumentos (ex: caminho do arquivo de entrada/saída).
 -   [ ] Orquestração do pipeline com ferramentas como Airflow ou Prefect.
 
 ---
@@ -148,5 +181,5 @@ ETL_CSV_TO_JSON/
 
 **Felipe Galvão**
 
--   LinkedIn: [`linkedin.com/in/felipe-galvao`](https://linkedin.com/in/felipe-galvão)
+-   LinkedIn: [`linkedin.com/in/felipe-galvao-data`](https://www.linkedin.com/in/felipe-galvao-data/)
 -   GitHub: [`github.com/felipegalvao`](https://github.com/felipegalvao)
