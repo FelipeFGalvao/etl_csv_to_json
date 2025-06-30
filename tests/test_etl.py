@@ -1,17 +1,8 @@
-import json
 import pytest
-import tempfile
 from pathlib import Path
 from unittest.mock import patch, mock_open, MagicMock
 from etl.pipeline import ETL
-from etl.utils import (
-    validate_schema, 
-    validate_data,
-    validate_csv_exists,
-    validate_batch_records,
-    validate_required_fields,
-    log_validation_report
-)
+
 #-------------------------------------------------------fixtures
 @pytest.fixture
 def sample_data():
